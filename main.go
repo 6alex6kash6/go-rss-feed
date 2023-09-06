@@ -1,14 +1,17 @@
 package main
 
 import (
-	"encoding/json"
+	"database/sql"
 	"log/slog"
 	"net/http"
 	"os"
 
+	v1 "github.com/6alex6kash6/go-rss-feed/internal/controller/http/v1"
+	"github.com/6alex6kash6/go-rss-feed/internal/database"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 )
 
 func main() {
@@ -18,6 +21,14 @@ func main() {
 	}
 
 	port := os.Getenv("PORT")
+	dbConn := os.Getenv("PG_CONN")
+	db, err := sql.Open("postgres", dbConn)
+	if err != nil {
+		slog.Error("Unable to connect to db")
+	}
+	dbQueries := database.New(db)
+
+	apiConfig := v1.NewApiConfig(dbQueries)
 
 	r := chi.NewRouter()
 	r.Use(cors.Handler(cors.Options{
@@ -34,11 +45,13 @@ func main() {
 		type res struct {
 			Status string `json:"status"`
 		}
-		respondWithJSON(w, http.StatusOK, res{Status: "ok"})
+		v1.RespondWithJSON(w, http.StatusOK, res{Status: "ok"})
 	})
 	api.Get("/err", func(w http.ResponseWriter, r *http.Request) {
-		respondWithError(w, http.StatusInternalServerError, "Internal Server Error")
+		v1.RespondWithError(w, http.StatusInternalServerError, "Internal Server Error")
 	})
+
+	api.Post("/user", apiConfig.CreateUser)
 
 	r.Mount("/v1", api)
 
@@ -49,28 +62,4 @@ func main() {
 
 	slog.Info("Server started on port:", port)
 	srv.ListenAndServe()
-}
-
-func respondWithError(w http.ResponseWriter, code int, msg string) {
-	if code > 499 {
-		slog.Info("Responding with 5XX error: %s", msg)
-	}
-	type errorResponse struct {
-		Error string `json:"error"`
-	}
-	respondWithJSON(w, code, errorResponse{
-		Error: msg,
-	})
-}
-
-func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
-	data, err := json.Marshal(payload)
-	if err != nil {
-		slog.Info("Error marshalling JSON: %s", err)
-		w.WriteHeader(500)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
-	w.Write(data)
 }
