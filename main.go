@@ -14,4 +14,5 @@ func main() {
 		slog.Error("Config error: ", err)
 	}
 	app.Run(config)
+
 }

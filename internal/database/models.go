@@ -9,9 +9,19 @@ import (
 	"time"
 )
 
+type Feed struct {
+	ID        int32
+	CreatedAt sql.NullTime
+	UpdatedAt sql.NullTime
+	Name      string
+	Url       sql.NullString
+	UserID    int32
+}
+
 type User struct {
 	ID        int32
 	CreatedAt sql.NullTime
 	UpdatedAt time.Time
 	Name      string
+	ApiKey    string
 }

@@ -33,9 +33,10 @@ func NewRouter(apiConfig *ApiConfig) *Router {
 	api.Get("/err", func(w http.ResponseWriter, r *http.Request) {
 		RespondWithError(w, http.StatusInternalServerError, "Internal Server Error")
 	})
-
-	api.Post("/user", apiConfig.CreateUser)
-
+	{
+		apiConfig.NewUserRoutes(api)
+		apiConfig.NewFeedRoutes(api)
+	}
 	r.Mount("/v1", api)
 	return &Router{
 		Handler: r,

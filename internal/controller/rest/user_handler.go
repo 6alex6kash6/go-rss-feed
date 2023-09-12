@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/6alex6kash6/go-rss-feed/internal/database"
+	"github.com/go-chi/chi/v5"
 )
 
 func (cfg *ApiConfig) CreateUser(w http.ResponseWriter, r *http.Request) {
@@ -27,4 +28,15 @@ func (cfg *ApiConfig) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	RespondWithJSON(w, http.StatusCreated, user)
+}
+
+func (cfg *ApiConfig) GetUser(w http.ResponseWriter, r *http.Request) {
+	user := r.Context().Value(UserKey)
+	RespondWithJSON(w, http.StatusOK, user)
+
+}
+
+func (cfg *ApiConfig) NewUserRoutes(api *chi.Mux) {
+	api.Post("/users", cfg.CreateUser)
+	api.Get("/users", AuthMiddleware(cfg.GetUser, cfg.DB))
 }
