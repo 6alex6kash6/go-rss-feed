@@ -12,19 +12,18 @@ import (
 
 const createFeed = `-- name: CreateFeed :one
 INSERT INTO
-    feeds (name, url, user_id, updated_at) 
-    VALUES($1, $2, $3, now())
-    RETURNING id, created_at, updated_at, name, url, user_id
+    feeds (name, url, updated_at) 
+    VALUES($1, $2, now())
+    RETURNING id, created_at, updated_at, name, url
 `
 
 type CreateFeedParams struct {
-	Name   string
-	Url    sql.NullString
-	UserID int32
+	Name string
+	Url  sql.NullString
 }
 
 func (q *Queries) CreateFeed(ctx context.Context, arg CreateFeedParams) (Feed, error) {
-	row := q.db.QueryRowContext(ctx, createFeed, arg.Name, arg.Url, arg.UserID)
+	row := q.db.QueryRowContext(ctx, createFeed, arg.Name, arg.Url)
 	var i Feed
 	err := row.Scan(
 		&i.ID,
@@ -32,7 +31,39 @@ func (q *Queries) CreateFeed(ctx context.Context, arg CreateFeedParams) (Feed, e
 		&i.UpdatedAt,
 		&i.Name,
 		&i.Url,
-		&i.UserID,
 	)
 	return i, err
+}
+
+const getAllFeeds = `-- name: GetAllFeeds :many
+select id, created_at, updated_at, name, url from feeds
+`
+
+func (q *Queries) GetAllFeeds(ctx context.Context) ([]Feed, error) {
+	rows, err := q.db.QueryContext(ctx, getAllFeeds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Feed
+	for rows.Next() {
+		var i Feed
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Name,
+			&i.Url,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

@@ -21,7 +21,7 @@ func AuthMiddleware(next authedHandler, db *database.Queries) http.HandlerFunc {
 		user, err := db.GetUserByApiKey(r.Context(), apiKey)
 		if err != nil {
 			slog.Error("Error: ", err)
-			RespondWithError(w, http.StatusInternalServerError, "Couldn't create user")
+			RespondWithError(w, http.StatusInternalServerError, "User not found")
 			return
 		}
 		ctx := context.WithValue(r.Context(), UserKey, user)

@@ -9,18 +9,19 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+type userInput struct {
+	Name string `json:"name"`
+}
+
 func (cfg *ApiConfig) CreateUser(w http.ResponseWriter, r *http.Request) {
-	type parameters struct {
-		Name string `json:"name"`
-	}
-	params := &parameters{}
-	if err := ParseBody(r, params); err != nil {
+	input := &userInput{}
+	if err := ParseBody(r, input); err != nil {
 		RespondWithError(w, 500, err.Error())
 	}
 
 	user, err := cfg.DB.CreateUser(r.Context(), database.CreateUserParams{
 		UpdatedAt: time.Now().UTC(),
-		Name:      params.Name,
+		Name:      input.Name,
 	})
 	if err != nil {
 		slog.Error("Error: ", err)

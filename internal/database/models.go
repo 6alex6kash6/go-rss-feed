@@ -15,7 +15,14 @@ type Feed struct {
 	UpdatedAt sql.NullTime
 	Name      string
 	Url       sql.NullString
+}
+
+type FeedUser struct {
+	ID        int32
 	UserID    int32
+	FeedID    int32
+	CreatedAt sql.NullTime
+	UpdatedAt sql.NullTime
 }
 
 type User struct {
