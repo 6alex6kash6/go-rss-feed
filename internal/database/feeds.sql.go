@@ -14,7 +14,7 @@ const createFeed = `-- name: CreateFeed :one
 INSERT INTO
     feeds (name, url, updated_at) 
     VALUES($1, $2, now())
-    RETURNING id, created_at, updated_at, name, url
+    RETURNING id, created_at, updated_at, name, url, last_fetched_at
 `
 
 type CreateFeedParams struct {
@@ -31,12 +31,13 @@ func (q *Queries) CreateFeed(ctx context.Context, arg CreateFeedParams) (Feed, e
 		&i.UpdatedAt,
 		&i.Name,
 		&i.Url,
+		&i.LastFetchedAt,
 	)
 	return i, err
 }
 
 const getAllFeeds = `-- name: GetAllFeeds :many
-select id, created_at, updated_at, name, url from feeds
+select id, created_at, updated_at, name, url, last_fetched_at from feeds
 `
 
 func (q *Queries) GetAllFeeds(ctx context.Context) ([]Feed, error) {
@@ -54,6 +55,7 @@ func (q *Queries) GetAllFeeds(ctx context.Context) ([]Feed, error) {
 			&i.UpdatedAt,
 			&i.Name,
 			&i.Url,
+			&i.LastFetchedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -66,4 +68,56 @@ func (q *Queries) GetAllFeeds(ctx context.Context) ([]Feed, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const getFeedsToFetch = `-- name: GetFeedsToFetch :many
+select id, created_at, updated_at, name, url, last_fetched_at from feeds order by last_fetched_at asc nulls first limit $1
+`
+
+func (q *Queries) GetFeedsToFetch(ctx context.Context, limit int32) ([]Feed, error) {
+	rows, err := q.db.QueryContext(ctx, getFeedsToFetch, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Feed
+	for rows.Next() {
+		var i Feed
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Name,
+			&i.Url,
+			&i.LastFetchedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateLastFetched = `-- name: UpdateLastFetched :one
+update feeds set last_fetched_at = now() where id = $1 RETURNING id, created_at, updated_at, name, url, last_fetched_at
+`
+
+func (q *Queries) UpdateLastFetched(ctx context.Context, id int32) (Feed, error) {
+	row := q.db.QueryRowContext(ctx, updateLastFetched, id)
+	var i Feed
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Name,
+		&i.Url,
+		&i.LastFetchedAt,
+	)
+	return i, err
 }

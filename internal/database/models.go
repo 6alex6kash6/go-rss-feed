@@ -10,11 +10,12 @@ import (
 )
 
 type Feed struct {
-	ID        int32
-	CreatedAt sql.NullTime
-	UpdatedAt sql.NullTime
-	Name      string
-	Url       sql.NullString
+	ID            int32
+	CreatedAt     sql.NullTime
+	UpdatedAt     sql.NullTime
+	Name          string
+	Url           sql.NullString
+	LastFetchedAt sql.NullTime
 }
 
 type FeedUser struct {
