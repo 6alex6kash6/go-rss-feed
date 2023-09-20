@@ -2,7 +2,9 @@ package scrapper
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -53,5 +55,34 @@ func (sc *Scrapper) processFeed(feed database.Feed, wg *sync.WaitGroup) {
 		slog.Error(err.Error())
 	}
 
-	slog.Info(item.Channel.Title)
+	for _, p := range item.Channel.Item {
+		publishedAt := sql.NullTime{}
+		if t, err := time.Parse(time.RFC1123Z, p.PubDate); err == nil {
+			publishedAt = sql.NullTime{
+				Time:  t,
+				Valid: true,
+			}
+		}
+
+		_, err := sc.DB.CreatePost(context.Background(), database.CreatePostParams{
+			Title: p.Title,
+			Url: sql.NullString{
+				String: p.Link,
+				Valid:  true,
+			},
+			Description: sql.NullString{
+				String: p.Description,
+				Valid:  true,
+			},
+			PublishedAt: publishedAt,
+			FeedID:      feed.ID,
+		})
+		if err != nil {
+			if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+				continue
+			}
+			slog.Info("Couldn't create post: %v", err)
+			continue
+		}
+	}
 }

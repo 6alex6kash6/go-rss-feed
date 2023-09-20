@@ -16,7 +16,9 @@ func Run(cfg *config.Config) {
 	router := v1.NewRouter(apiConfig)
 	server := httpserver.New(router.Handler, cfg.HttpPort)
 
-	go scrapper.Run(2)
+	if cfg.RunScrapper {
+		go scrapper.Run(2)
+	}
 	server.Start()
 
 }

@@ -26,6 +26,17 @@ type FeedUser struct {
 	UpdatedAt sql.NullTime
 }
 
+type Post struct {
+	ID          int32
+	CreatedAt   sql.NullTime
+	UpdatedAt   sql.NullTime
+	Title       string
+	Url         sql.NullString
+	Description sql.NullString
+	PublishedAt sql.NullTime
+	FeedID      int32
+}
+
 type User struct {
 	ID        int32
 	CreatedAt sql.NullTime

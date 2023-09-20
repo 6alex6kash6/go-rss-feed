@@ -36,6 +36,7 @@ func NewRouter(apiConfig *ApiConfig) *Router {
 	{
 		apiConfig.NewUserRoutes(api)
 		apiConfig.NewFeedRoutes(api)
+		apiConfig.NewPostsRoutes(api)
 	}
 	r.Mount("/v1", api)
 	return &Router{
